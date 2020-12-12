@@ -13,7 +13,9 @@
       "MINLEN": 0.1,
       "DT_DETERIORATION": 1.0,
       "DETERIORATION": 0.9999,
-      "VISIBILITY_THRESHOLD": 0.08
+      "VISIBILITY_THRESHOLD": 0.08,
+      "DT_WIDTH":208.0e-1,
+      "DT_CARRYING":52.0e-1
       },
 
    "DOTS":
