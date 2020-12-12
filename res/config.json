@@ -28,7 +28,7 @@
       "NUMBER_OF_OBSTACLES":1,
       "X":[0, 500, 500, 0],
       "Y":[300, 400, 400, 400],
-      "C_REL":1.0
+      "RELATIVE_SPEED":1.0
    },
    "SETUP_BASE":
    {
