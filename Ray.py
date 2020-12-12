@@ -126,7 +126,7 @@ class Ray:
         return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()),
                            self.pos.getY() - (1.00015 * self.velocity.getY())), vel, i)
 
-    def getRefracted(self, obstacle: Obstacle) -> Ray:
+    def getRefracted(self, obstacle: Obstacle):
         i = self.intensity
         vel = Vector2.getRefracted(self, A=obstacle.getPos(self.vertice_number),
                                    B=obstacle.getPos(self.vertice_number + 1),
@@ -134,10 +134,10 @@ class Ray:
         return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()),
                            self.pos.getY() + (1.00015 * self.velocity.getY())), vel, i)
 
-    def addLeftVirtualNeighbor(self, neighbor: Ray):
+    def addLeftVirtualNeighbor(self, neighbor):
         self.virtual_neighbors_left = np.concatenate((self.virtual_neighbors_left, neighbor))
 
-    def addRightVirtualNeighbor(self, neighbor: Ray):
+    def addRightVirtualNeighbor(self, neighbor):
         self.virtual_neighbors_right = np.concatenate((self.virtual_neighbors_right, neighbor))
 
 # deleteLeftVirtualNeighbor
