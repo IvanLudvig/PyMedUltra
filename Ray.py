@@ -2,6 +2,7 @@ import json
 import math
 import numpy as np
 from Vector2 import Vector2
+from Obstacle import Obstacle
 class Ray:
 	def __init__(self,pos:Vector2=Vector2(),velocity:Vector2=Vector2(),material=-1,intensity=1.0,
 		nextEncounter=math.inf,obstacle_number = 0,vertice_number =0,left=None,
@@ -90,10 +91,57 @@ class Ray:
 	def setVirtualLeft(self, virtual_neighbors_left):
 		self.virtual_neighbors_left=virtual_neighbors_left
 	
-	def detVirtualRight(self, virtual_neighbors_right):
+	def setVirtualRight(self, virtual_neighbors_right):
 		self.virtual_neighbors_right = virtual_neighbors_right
+
+	def setInvalid(self, invalid):
+		self.invalid = invalid
 	
+	def getPosAfterStep(self, step:float)->Vector2:
+		return Vector2(self.pos.getX() + self.velocity.getX() * step, self.pos.getY() + self.velocity.getY() * step)
+
+	def getTime(self, dist, relativeSpeed)->float:
+		if (self.material >= 0):
+			return math.fabs(dist / relativeSpeed)
+		else:
+			return math.fabs(dist)
 	
+	def update(self, timeStep, relativeSpeed):
+		self.pos.setX(self.pos.getX() + self.velocity.getX() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
+		self.pos.setY(self.pos.getY() + self.velocity.getY() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
+		if ((self.nextEncounter < -0.5) or (self.nextEncounter == math.inf)):
+			return
+		self.nextEncounter  -= timeStep
+		return
+
+	def getReflected(self, obstacle: Obstacle):
+		i = self.intensity
+		vel = Vector2.getReflected(self, A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
+		velocity = self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
+		return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()), 
+		self.pos.getY() - (1.00015 * self.velocity.getY())),vel,i)
+
+	def getRefracted(self, obstacle: Obstacle)->Ray:
+		i = self.intensity
+		vel = Vector2.getRefracted(self, A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
+		velocity = self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
+		return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()), 
+		self.pos.getY() + (1.00015 * self.velocity.getY())),vel,i)
+
+	def addLeftVirtualNeighbor(self, neighbor:Ray):
+		self.virtual_neighbors_left = np.concatenate((self.virtual_neighbors_left, neighbor))
+
+	def addRightVirtualNeighbor(self, neighbor:Ray):
+		self.virtual_neighbors_right = np.concatenate((self.virtual_neighbors_right, neighbor))
+	
+	#deleteLeftVirtualNeighbor
+
+
+
+	
+
+	
+
 
 	
 

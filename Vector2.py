@@ -80,11 +80,11 @@ class Vector2:
 				   sinA * (cosB * cosB - sinB * sinB) + 2.0 * cosA * sinB * cosB)
 
 
-    def getRefracted(self,A:Vector2, B:Vector2, Velocity:Vector2, relativeSpeed:float, intensity:float)->Vector2:
+    def getRefracted(self,A:Vector2, B:Vector2, velocity:Vector2, relativeSpeed:float, intensity:float)->Vector2:
         sinG = (B.getY() - A.getY())/self.length(A, B)
         cosG = (B.getX() - A.getX())/self.length(A, B)
-        sinF = Velocity.getY()
-        cosF = Velocity.getX()
+        sinF = velocity.getY()
+        cosF = velocity.getX()
         cosA = cosG * cosF + sinG * sinF
         sinA = sinG * cosF - sinF * cosG
         cosB = relativeSpeed * cosA
