@@ -35,7 +35,7 @@ class Vector2:
     def doIntersact(self, A:Vector2, B:Vector2, C:Vector2, D:Vector2, Result:Vector2)->bool:
         if  not (self.area(A, D, B) * self.area(A, B, C) > 0 and self.area(D, B, C) * self.area(D, C, A) > 0):
             return False
-        Temp = float((C.getY() - A.getY()) * (B.getX() - A.getX()) -
+        Temp = ((C.getY() - A.getY()) * (B.getX() - A.getX()) -
 		(C.getX() - A.getX()) * (B.getY() - A.getY()))/((C.getX() - D.getX()) * (B.getY() - A.getY()) -
 			(C.getY() - D.getY()) * (B.getX() - A.getX()))
         Result.setX(C.getX() + (C.getX() - D.getX()) * Temp)
@@ -62,6 +62,53 @@ class Vector2:
         o = Vector2((a.getX() + b.getX())/2, (a.getX() + b.getY())/2)
         dist = self.length(o, c)
         return dist
+
+
+
+    def getReflected(self,A:Vector2, B:Vector2, velocity:Vector2, relativeSpeed:float, intensity:float)->Vector2:
+        sinA = -velocity.getY()
+        cosA = velocity.getX()
+        sinB = (B.getY() - A.getY()) / self.length(A, B)
+        cosB = (B.getX() - A.getX()) / self.length(A, B)
+        if (cosB > 1.0 or cosB < -1.0):
+            intensity = -1
+            return Vector2()
+        z1 = 1 * cosA
+        z2 = relativeSpeed * cosB
+        intensity *= math.fabs((z2 - z1) / (z2 + z1))
+        return Vector2(cosA * (cosB * cosB - sinB * sinB) - 2.0 * sinA * sinB * cosB,
+				   sinA * (cosB * cosB - sinB * sinB) + 2.0 * cosA * sinB * cosB)
+
+
+    def getRefracted(self,A:Vector2, B:Vector2, Velocity:Vector2, relativeSpeed:float, intensity:float)->Vector2:
+        sinG = (B.getY() - A.getY())/self.length(A, B)
+        cosG = (B.getX() - A.getX())/self.length(A, B)
+        sinF = Velocity.getY()
+        cosF = Velocity.getX()
+        cosA = cosG * cosF + sinG * sinF
+        sinA = sinG * cosF - sinF * cosG
+        cosB = relativeSpeed * cosA
+        if (cosB > 1.0 or cosB < -1.0):
+            intensity = -1
+            return Vector2()
+        sinB = math.sqrt(1 - cosB * cosB)
+        if (sinA < 0):
+            sinB *= -1
+        z1 = 1 * cosA
+        z2 = relativeSpeed * cosB
+        intensity *= math.fabs(2 * z2 / (z2 + z1))
+        return Vector2(cosG * cosB + sinG * sinB, sinG * cosB - cosG * sinB)
+
+
+        
+
+
+
+
+
+
+
+
 
     
 
