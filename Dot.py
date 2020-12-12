@@ -1,6 +1,3 @@
-from Vector2 import Vector2
-
-
 class Dot:
     def __init__(self, pos, brightness=0):
         self.pos = pos
