@@ -1,0 +1,54 @@
+{"Constants" : { 
+      "VERTICES": 5,
+      "OBSTACLES_TOTAL": 10,
+      "DOTS_TOTAL": 100,
+      "SENSORS": 32,
+      "DX_SENSORS": 4.6875,
+      "X": 500.0,
+      "Y": 500.0,
+      "ZERO": 0.000001,
+      "POINTS_IN_DOT_WAVEFRONT": 4000,
+      "T_MULTIPLIER": 0.005,
+      "DT_DIGITIZATION": 16.0e-1,
+      "MINLEN": 0.1,
+      "DT_DETERIORATION": 1.0,
+      "DETERIORATION": 0.9999
+      },
+
+   "DOTS":
+   {
+      "NUMBER_OF_DOTS":3,
+      "X":[200, 250, 300],
+      "Y":[50, 100, 150],
+      "B":[1,1,1]
+   },
+
+   "OBSTACLES":
+   {
+      "NUMBER_OF_OBSTACLES":1,
+      "X":[0, 500, 500, 0],
+      "Y":[300, 400, 400, 400],
+      "C_REL":1.0
+   },
+   "SETUP_BASE":
+   {
+      "RAYS_NUM":200,
+      "FOCUS":400.0,
+      "PIES":6.0,
+      "NODES_NUM":615
+   },
+   "WINDOW": 10000,
+   "NUMBER_OF_SENSORS":32,
+   "ROOTS":
+   {
+      "CSV_ROOT1":"/hilb.csv",
+      "SPECTRUM":"/spectrum.png",
+      "CSV_ROOT2":"/2hilb.csv",
+      "PREHILB":"/prehilb.png",
+      "SECOND_HILB":"/2hilb.png",
+      "INPUT":"data/final_raw_data.csv",
+      "OUTPUT":"data/result.png"
+   }
+ }
+
+ 
