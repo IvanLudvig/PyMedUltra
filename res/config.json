@@ -12,7 +12,8 @@
       "DT_DIGITIZATION": 16.0e-1,
       "MINLEN": 0.1,
       "DT_DETERIORATION": 1.0,
-      "DETERIORATION": 0.9999
+      "DETERIORATION": 0.9999,
+      "VISIBILITY_THRESHOLD": 0.08
       },
 
    "DOTS":
