@@ -1,6 +1,12 @@
 import math
+import json
 class Vector2:
     def __init__(self, x=0, y=0):
+        conf = 'res/config.json'
+        with open(conf) as jf:
+            configuration = json.load(jf)
+            self.ZERO = configuration["Constants"]["ZERO"]
+
         self.x = x
         self.y = y
 
@@ -29,6 +35,47 @@ class Vector2:
     def doIntersact(self, A:Vector2, B:Vector2, C:Vector2, D:Vector2, Result:Vector2)->bool:
         if  not (self.area(A, D, B) * self.area(A, B, C) > 0 and self.area(D, B, C) * self.area(D, C, A) > 0):
             return False
+        Temp = float((C.getY() - A.getY()) * (B.getX() - A.getX()) -
+		(C.getX() - A.getX()) * (B.getY() - A.getY()))/((C.getX() - D.getX()) * (B.getY() - A.getY()) -
+			(C.getY() - D.getY()) * (B.getX() - A.getX()))
+        Result.setX(C.getX() + (C.getX() - D.getX()) * Temp)
+        Result.setY(C.getY() + (C.getY() - D.getY()) * Temp)
+        return True
 
+    def doIntersect(self, A:Vector2, B:Vector2, C:Vector2, V:Vector2, distanceToIntersection:float)->bool:
+        D = Vector2(C.getX() + V.getX() * 1000, C.getY() + V.getY() * 1000)
+        if not (self.area(A, D, B) * self.area(A, B, C) > 0 and self.area(D, B, C) * self.area(D, C, A) > 0):
+            return False
+        distanceToIntersection = ((C.getY() - A.getY()) * (B.getX() - A.getX()) -
+		(C.getX() - A.getX()) * (B.getY() - A.getY()))/((C.getX() - D.getX()) * (B.getY() - A.getY()) -
+			(C.getY() - D.getY()) * (B.getX() - A.getX())) * self.length(C, D)
+        return True
+
+    def isPointInRect(self,P:Vector2, A:Vector2, B:Vector2, C:Vector2, D:Vector2,)->bool:
+        Area1 = self.area(P, A, B) > -self.ZERO
+        Area2 = self.area(P, B, C) > -self.ZERO
+        Area3 = self.area(P, C, D) > -self.ZERO
+        Area4 = self.area(P, D, A) > -self.ZERO
+        return (Area1 == Area2 and Area2 == Area3 and Area3 == Area4)
+
+    def distanceToSegment(self, a:Vector2, b:Vector2, va:Vector2, vb:Vector2, c:Vector2 )->float:
+        o = Vector2((a.getX() + b.getX())/2, (a.getX() + b.getY())/2)
+        dist = self.length(o, c)
+        return dist
+
+    
+
+
+
+
+
+
+
+
+
+
+    
+        
+    
 
 
