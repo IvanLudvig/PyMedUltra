@@ -159,7 +159,7 @@ class Ray:
     def virtualHandler(self, ray: Ray, isRightNeighbor: bool) -> None:
         if (ray.getMaterial() == self.getMaterial() and Vector2().scalar(ray.getVelocity(),
                                                                          self.getVelocity()) > 0 and Vector2().length(
-                ray.getPos(), self.getPos()) < 5 * self.MINLEN):
+            ray.getPos(), self.getPos()) < 5 * self.MINLEN):
             if self.getLeft() and isRightNeighbor:
                 ray.setRight(self)
                 self.setLeft(ray)
@@ -196,8 +196,8 @@ class Ray:
                 self.right.left = None
         self.killLeft()
         self.killRight()
-        self.virtual_neighbors_left.setVirtualLeft(np.array([]))
-        self.virtual_neighbors_right.setVirtualRight(np.array([]))
+        self.virtual_neighbors_left = np.array([])
+        self.virtual_neighbors_right = np.array([])
 
     def clearNeighbours(self) -> None:
         nulls_exist = True
