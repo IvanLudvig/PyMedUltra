@@ -26,8 +26,14 @@ class Solver:
             self.Y = configuration['Constants']['Y']
             self.DX_SENSORS = configuration['Constants']['DX_SENSORS']
             self.ZERO = configuration['Constants']['ZERO']
+            self.DT_DIGITIZATION = configuration['Constants']['DT_DIGITIZATION']
+            self.T_MULTIPLIER = configuration['Constants']['T_MULTIPLIER']
+            self.DT_DETERIORATION = configuration['Constants']['DT_DETERIORATION']
 
-            self.nodesNum = 0
+            self.raysNum = 0
+            self.deteriorationTime = 0
+            self.totalTime = 0
+            self.currentSensor = 0
             self.obstacles = np.array([])
             self.dots = np.array([])
             self.sensors = np.array([])
@@ -35,6 +41,7 @@ class Solver:
 
             self.initObstacles(configuration)
             self.initDots(configuration)
+        self.propagate()
 
     def initObstacles(self, configuration):
         for i in range(self.OBSTACLES):
@@ -62,9 +69,14 @@ class Solver:
 
         for sensor in self.sensors:
             self.initExplosion(sensor.getPos())
+            print('SENSOR', self.currentSensor)
             self.resetTime()
+            i = 0
             while self.finishTime > 0:
                 self.step()
+                print('iter', i)
+                i += 1
+            self.currentSensor += 1
 
     def initExplosion(self, pos):
         n = self.POINTS_IN_DOT_WAVEFRONT * 2
@@ -74,7 +86,7 @@ class Solver:
             velocity = Vector2(math.cos(angle), math.sin(angle))
             self.rays = np.append(self.rays, Ray(pos, velocity))
 
-        for i in range(1, n):
+        for i in range(1, n - 1):
             self.rays[i].setLeft(self.rays[i - 1])
             self.rays[i].setRight(self.rays[i + 1])
 
@@ -94,9 +106,31 @@ class Solver:
                 encounters += self.checkObstacles(ray)
                 if ray.getRight():
                     encounters += self.checkDots(ray)
-
                 if encounters == 0:
                     ray.setNextEncounter(-1)
+
+        timeStep = self.DT_DIGITIZATION * self.T_MULTIPLIER
+        for ray in self.rays:
+            timeStep = min(timeStep, ray.getNextEncounter())
+
+        for ray in self.rays:
+            ray.update(timeStep, self.obstacles[ray.getMaterial()].getRelativeSpeed())
+
+        self.handleReflection()
+        self.fixNodes()
+
+        self.deteriorationTime += timeStep
+        while self.deteriorationTime > self.DT_DETERIORATION:
+            self.deteriorate()
+            self.deteriorationTime -= self.DT_DETERIORATION
+
+        self.totalTime += timeStep
+        while self.totalTime > self.DT_DETERIORATION:
+            if self.startTime < 0:
+                self.writeToCSV()
+            self.totalTime -= self.DT_DETERIORATION
+            self.startTime -= self.DT_DETERIORATION
+            self.finishTime -= self.DT_DETERIORATION
 
     def checkObstacles(self, ray):
         encounters = 0
@@ -142,33 +176,36 @@ class Solver:
 
     def handleReflection(self):
         delta = float(0.5)
-        for i in range(self.nodesNum):
+        for i in range(self.raysNum):
             if (self.rays[i].getNextEncounter() < self.ZERO) and (self.rays[i].getNextEncounter > -delta):
                 if self.rays[i].getObstacleNumber() >= 0:
-                    reflected = Ray(self.rays[i].getReflected(self.obstacles[self.rays[i].getObstacleNumber()]))
-                    refracted = Ray(self.rays[i].getRefracted(self.obstacles[self.rays[i].getObstacleNumber()]))
+                    reflected = self.rays[i].getReflected(self.obstacles[self.rays[i].getObstacleNumber()])
+                    refracted = self.rays[i].getRefracted(self.obstacles[self.rays[i].getObstacleNumber()])
                     if reflected.getIntensity() == -1:
                         self.rays[i].setInvalid(1)
                     else:
                         # real neighbors always turn to ghost ones -
                         # reflected go to the other direction, refracted are in another material
-
                         if self.rays[i].getLeft():
-                            left = Ray(self.rays[i].getLeft())
+                            left = self.rays[i].getLeft()
                             reflected.addLeftVirtualNeighbor(left)
                             refracted.addLeftVirtualNeighbor(left)
                             left.addRightVirtualNeighbor(reflected)
-                            left.addLeftVirtualNeighbor(refracted)
+                            left.addRightVirtualNeighbor(refracted)
                             self.rays[i].setLeft(left)
 
                         if self.rays[i].getRight():
-                            right = Ray(self.rays[i].getRight())
+                            right = self.rays[i].getRight()
                             reflected.addRightVirtualNeighbor(right)
                             refracted.addRightVirtualNeighbor(right)
                             right.addRightVirtualNeighbor(reflected)
-                            right.addLeftVirtualNeighbor(refracted)
+                            right.addRightVirtualNeighbor(refracted)
                             self.rays[i].setRight(right)
 
+                    self.rays[self.raysNum] = reflected
+                    self.raysNum += 1
+                    self.rays[self.raysNum] = refracted
+                    self.raysNum += 1
                     self.rays[i].restoreWavefront(reflected, refracted)
 
                 elif self.rays[i].getObstacleNumber() == -1:  # encountering a dot obstacle
@@ -181,15 +218,15 @@ class Solver:
 
                     dalpha = float(math.pi / (self.POINTS_IN_DOT_WAVEFRONT - 1))
                     alpha += math.pi / 2
-                    oldNodesNum = self.nodesNum
+                    oldNodesNum = self.raysNum
                     for j in range(self.POINTS_IN_DOT_WAVEFRONT):
                         n = Ray(
                             Vector2(self.dots[self.rays[i].getVerticeNumber()].getPos().getX() + np.cos(alpha) * 0.01,
                                     self.dots[self.rays[i].getVerticeNumber()].getPos().getY() + np.sin(alpha) * 0.01),
                             Vector2(np.cos(alpha), np.sin(alpha)),
                             1.0 * self.dots[self.rays[i].getVerticeNumber()].getBrightness())
-                        self.rays[self.nodesNum] = n
-                        self.nodesNum += 1
+                        self.rays[self.raysNum] = n
+                        self.raysNum += 1
                         alpha -= dalpha
 
                     for j in range(1, self.POINTS_IN_DOT_WAVEFRONT - 1):
@@ -197,5 +234,41 @@ class Solver:
                         self.rays[oldNodesNum + j].setRight(self.rays[oldNodesNum + j + 1])
 
                     self.rays[oldNodesNum].setRight(self.rays[oldNodesNum + 1])
-                    self.rays[self.nodesNum - 1].setLeft(self.rays[self.nodesNum - 2])
+                    self.rays[self.raysNum - 1].setLeft(self.rays[self.raysNum - 2])
                     self.rays[i].setNextEncounter(math.inf)
+
+    def fixNodes(self):
+        for i in range(self.raysNum):
+            self.rays[i].checkInvalid()
+
+            if self.rays[i].getInvalid():
+                for sensor in self.sensors:
+                    for record in sensor.getRecord():
+                        if record.getRay() == self.rays[i]:
+                            sensor.clearRecord()
+                self.rays[i] = None
+
+        cleared = False
+        while not cleared:
+            while (not self.rays[self.raysNum - 1]) and (self.raysNum > 0):
+                self.raysNum -= 1
+            cleared = True
+            for i in range(self.raysNum):
+                if not self.rays[i]:
+                    self.raysNum -= 1
+                    self.rays[i] = self.rays[self.raysNum]
+                    cleared = False
+                    break
+
+        for ray in self.rays:
+            ray.clearNeighbours()
+
+    def deteriorate(self):
+        for ray in self.rays:
+            ray.deteriorate()
+        for sensor in self.sensors:
+            sensor.deteriorate()
+
+    def writeToCSV(self):
+        for sensor in self.sensors:
+            sensor.writeToCSV(self.currentSensor)
