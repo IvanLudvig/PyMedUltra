@@ -19,10 +19,10 @@ class Solver:
             self.VERTICES = configuration['Constants']['VERTICES']
             self.DOTS = configuration['DOTS']['NUMBER_OF_DOTS']
             self.SENSORS = configuration['Constants']['SENSORS']
-            self.POINTS_IN_DOT_WAVEFRONT = configuration['CONSTANTS']['POINTS_IN_DOT_WAVEFRONT']
-            self.X = configuration['CONSTANTS']['X']
-            self.Y = configuration['CONSTANTS']['Y']
-            self.DX_SENSORS = configuration['CONSTANTS']['DX_SENSORS']
+            self.POINTS_IN_DOT_WAVEFRONT = configuration['Constants']['POINTS_IN_DOT_WAVEFRONT']
+            self.X = configuration['Constants']['X']
+            self.Y = configuration['Constants']['Y']
+            self.DX_SENSORS = configuration['Constants']['DX_SENSORS']
             self.ZERO = configuration['Constants']['ZERO']
 
             self.nodesNum = 0
