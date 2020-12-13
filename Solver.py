@@ -6,7 +6,9 @@ import numpy as np
 from Dot import Dot
 from Obstacle import Obstacle
 from Ray import Ray
-from Vector2 import Vector2
+from Record import Record
+from Sensor import Sensor
+from Vector2 import Vector2, doIntersect, distanceToSegment
 
 
 class Solver:
@@ -40,7 +42,7 @@ class Solver:
             for j in range(self.VERTICES):
                 obstacle.addPos(Vector2(configuration['OBSTACLES']['X'][i], configuration['OBSTACLES']['Y'][i]))
             relativeSpeed = configuration['OBSTACLES']['RELATIVE_SPEED']
-            obstacle.setCRel(relativeSpeed)
+            obstacle.setRelativeSpeed(relativeSpeed)
             obstacle.addPos(obstacle.getPos(0))
             self.obstacles = np.append(self.obstacles, obstacle)
 
@@ -54,8 +56,9 @@ class Solver:
         for i in range(self.SENSORS):
             x = self.X / 2 - self.DX_SENSORS * (self.SENSORS / 2 - i)
             y = self.Y * 0.999
-            # sensor = Sensor(Vector2(x, y))
-            # self.sensors = np.append(self.sensors, sensor)
+            sensor = Sensor()
+            sensor.setPos(Vector2(x, y))
+            self.sensors = np.append(self.sensors, sensor)
 
         for sensor in self.sensors:
             self.initExplosion(sensor.getPos())
@@ -91,15 +94,51 @@ class Solver:
                 encounters += self.checkObstacles(ray)
                 if ray.getRight():
                     encounters += self.checkDots(ray)
-                    
+
                 if encounters == 0:
                     ray.setNextEncounter(-1)
 
     def checkObstacles(self, ray):
         encounters = 0
+        for i, obstacle in enumerate(self.obstacles):
+            for vertex in range(self.VERTICES - 1):
+                intersect, distance = doIntersect(obstacle.getPos(vertex), obstacle.getPos(vertex + 1), ray.getPos(),
+                                                  ray.getVelocity())
+                if intersect:
+                    time = ray.getTime(distance, self.obstacles[ray.getMaterial()].getRelativeSpeed())
+                    if time < ray.getNextEncounter():
+                        ray.setNextEncounter(time)
+                        ray.setObstacleNumber(i)
+                        ray.setVerticeNumber(vertex)
+                        encounters += 1
+        return encounters
 
     def checkDots(self, ray):
         encounters = 0
+
+        rayPos = ray.getPosAfterStep(10)
+        rightRayPos = ray.getRight().getPosAfterStep(10)
+        rayNextPos = ray.getPosAfterStep(1000)
+        rightRayNextPos = ray.getRight().getPosAfterStep(1000)
+
+        for i, dot in enumerate(self.dots):
+            if dot.getPos().isPointInRect(rayPos, rightRayPos, rayNextPos, rightRayNextPos):
+                distance = distanceToSegment(ray.getPos(), ray.getRight().getPos(), dot.getPos())
+                time = ray.getTime(distance, self.obstacles[ray.getMaterial()].getRelativeSpeed())
+                if time < ray.getNextEncounter():
+                    ray.setNextEncounter(time)
+                    ray.setObstacleNumber(-1)
+                    ray.setVerticeNumber(i)
+                    encounters += 1
+
+        for sensor in self.sensors:
+            if sensor.getPos().isPointInRect(rayPos, rightRayPos, rayNextPos, rightRayNextPos):
+                distance = distanceToSegment(ray.getPos(), ray.getRight().getPos(), dot.getPos())
+                time = ray.getTime(distance, self.obstacles[ray.getMaterial()].getRelativeSpeed())
+                if time < ray.getNextEncounter():
+                    sensor.addRecord(Record(-time, ray.getIntensity(), 1.0 / ray.getVelocity().getY()))
+
+        return encounters
 
     def handleReflection(self):
         delta = float(0.5)
@@ -144,10 +183,11 @@ class Solver:
                     alpha += math.pi / 2
                     oldNodesNum = self.nodesNum
                     for j in range(self.POINTS_IN_DOT_WAVEFRONT):
-                        n = Ray(Vector2(self.dots[self.rays[i].getVerticeNumber()].getPos().getX()+np.cos(alpha)*0.01,
-                                        self.dots[self.rays[i].getVerticeNumber()].getPos().getY()+np.sin(alpha)*0.01),
-                                Vector2(np.cos(alpha), np.sin(alpha)),
-                                1.0*self.dots[self.rays[i].getVerticeNumber()].getBrightness())
+                        n = Ray(
+                            Vector2(self.dots[self.rays[i].getVerticeNumber()].getPos().getX() + np.cos(alpha) * 0.01,
+                                    self.dots[self.rays[i].getVerticeNumber()].getPos().getY() + np.sin(alpha) * 0.01),
+                            Vector2(np.cos(alpha), np.sin(alpha)),
+                            1.0 * self.dots[self.rays[i].getVerticeNumber()].getBrightness())
                         self.rays[self.nodesNum] = n
                         self.nodesNum += 1
                         alpha -= dalpha
@@ -159,6 +199,3 @@ class Solver:
                     self.rays[oldNodesNum].setRight(self.rays[oldNodesNum + 1])
                     self.rays[self.nodesNum - 1].setLeft(self.rays[self.nodesNum - 2])
                     self.rays[i].setNextEncounter(math.inf)
-
-
-

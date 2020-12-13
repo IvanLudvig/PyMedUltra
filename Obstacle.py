@@ -17,10 +17,10 @@ class Obstacle:
     def setPos(self, j: int, pos: Vector2) -> None:
         self.pos[j] = pos
 
-    def getCRel(self) -> float:
+    def getRelativeSpeed(self) -> float:
         return self.relativeSpeed
 
-    def setCRel(self, relativeSpeed: float) -> None:
+    def setRelativeSpeed(self, relativeSpeed: float) -> None:
         self.relativeSpeed = relativeSpeed
 
     def addPos(self, pos: Vector2) -> None:

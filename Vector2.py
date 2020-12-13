@@ -25,16 +25,6 @@ class Vector2:
     def getY(self):
         return self.y
 
-    def scalar(self, A: Vector2, B: Vector2) -> float:
-        return A.getX() * B.getX() + A.getY() * B.getY()
-
-    def length(self, A: Vector2, B: Vector2) -> float:
-        tmp = Vector2((A.getX() - B.getX()), (A.getY() - B.getY()))
-        return math.sqrt(self.scalar(tmp, tmp))
-
-    def area(self, A: Vector2, B: Vector2, C: Vector2) -> float:
-        return (B.getX() - A.getX()) * (C.getY() - A.getY()) - (B.getY() - A.getY()) * (C.getX() - A.getX())
-
     def doIntersact(self, A: Vector2, B: Vector2, C: Vector2, D: Vector2, Result: Vector2) -> bool:
         if not (self.area(A, D, B) * self.area(A, B, C) > 0 and self.area(D, B, C) * self.area(D, C, A) > 0):
             return False
@@ -45,27 +35,12 @@ class Vector2:
         Result.setY(C.getY() + (C.getY() - D.getY()) * Temp)
         return True
 
-    def doIntersect(self, A: Vector2, B: Vector2, C: Vector2, V: Vector2, distanceToIntersection: float) -> bool:
-        D = Vector2(C.getX() + V.getX() * 1000, C.getY() + V.getY() * 1000)
-        if not (self.area(A, D, B) * self.area(A, B, C) > 0 and self.area(D, B, C) * self.area(D, C, A) > 0):
-            return False
-        distanceToIntersection = ((C.getY() - A.getY()) * (B.getX() - A.getX()) -
-                                  (C.getX() - A.getX()) * (B.getY() - A.getY())) / (
-                                         (C.getX() - D.getX()) * (B.getY() - A.getY()) -
-                                         (C.getY() - D.getY()) * (B.getX() - A.getX())) * self.length(C, D)
-        return True
-
-    def isPointInRect(self, P: Vector2, A: Vector2, B: Vector2, C: Vector2, D: Vector2, ) -> bool:
-        Area1 = self.area(P, A, B) > -self.ZERO
-        Area2 = self.area(P, B, C) > -self.ZERO
-        Area3 = self.area(P, C, D) > -self.ZERO
-        Area4 = self.area(P, D, A) > -self.ZERO
+    def isPointInRect(self, A: Vector2, B: Vector2, C: Vector2, D: Vector2, ) -> bool:
+        Area1 = area(self, A, B) > -self.ZERO
+        Area2 = area(self, B, C) > -self.ZERO
+        Area3 = area(self, C, D) > -self.ZERO
+        Area4 = area(self, D, A) > -self.ZERO
         return (Area1 == Area2 and Area2 == Area3 and Area3 == Area4)
-
-    def distanceToSegment(self, a: Vector2, b: Vector2, va: Vector2, vb: Vector2, c: Vector2) -> float:
-        o = Vector2((a.getX() + b.getX()) / 2, (a.getX() + b.getY()) / 2)
-        dist = self.length(o, c)
-        return dist
 
     def getReflected(self, A: Vector2, B: Vector2, velocity: Vector2, relativeSpeed: float,
                      intensity: float) -> Vector2:
@@ -101,3 +76,29 @@ class Vector2:
         z2 = relativeSpeed * cosB
         intensity *= math.fabs(2 * z2 / (z2 + z1))
         return Vector2(cosG * cosB + sinG * sinB, sinG * cosB - cosG * sinB)
+
+
+def scalar(A: Vector2, B: Vector2) -> float:
+    return A.getX() * B.getX() + A.getY() * B.getY()
+
+def length(A: Vector2, B: Vector2) -> float:
+    tmp = Vector2((A.getX() - B.getX()), (A.getY() - B.getY()))
+    return math.sqrt(scalar(tmp, tmp))
+
+def area(A: Vector2, B: Vector2, C: Vector2) -> float:
+        return (B.getX() - A.getX()) * (C.getY() - A.getY()) - (B.getY() - A.getY()) * (C.getX() - A.getX())
+
+def doIntersect(A: Vector2, B: Vector2, C: Vector2, V: Vector2):
+        D = Vector2(C.getX() + V.getX() * 1000, C.getY() + V.getY() * 1000)
+        if not (area(A, D, B) * area(A, B, C) > 0 and area(D, B, C) * area(D, C, A) > 0):
+            return False, -1
+        distanceToIntersection = ((C.getY() - A.getY()) * (B.getX() - A.getX()) -
+                                  (C.getX() - A.getX()) * (B.getY() - A.getY())) / (
+                                         (C.getX() - D.getX()) * (B.getY() - A.getY()) -
+                                         (C.getY() - D.getY()) * (B.getX() - A.getX())) * length(C, D)
+        return True, distanceToIntersection
+
+def distanceToSegment(a: Vector2, b: Vector2, va: Vector2, vb: Vector2, c: Vector2) -> float:
+    o = Vector2((a.getX() + b.getX()) / 2, (a.getX() + b.getY()) / 2)
+    dist = length(o, c)
+    return dist
