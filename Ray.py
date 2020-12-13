@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import math
 import numpy as np
@@ -14,6 +15,8 @@ class Ray:
             configuration = json.load(jf)
             self.VISIBILITY_THRESHOLD = configuration["Constants"]["VISIBILITY_THRESHOLD"]
             self.SENSORS = configuration["Constants"]["SENSORS"]
+            self.X = configuration["Constants"]["X"]
+            self.Y = configuration["Constants"]["Y"]
         self.pos = Vector2()
         self.velocity = Vector2()
         self.material = material
@@ -126,7 +129,8 @@ class Ray:
         return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()),
                            self.pos.getY() - (1.00015 * self.velocity.getY())), vel, i)
 
-    def getRefracted(self, obstacle: Obstacle):
+
+    def getRefracted(self, obstacle: Obstacle) -> Ray:
         i = self.intensity
         vel = Vector2.getRefracted(self, A=obstacle.getPos(self.vertice_number),
                                    B=obstacle.getPos(self.vertice_number + 1),
@@ -134,10 +138,17 @@ class Ray:
         return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()),
                            self.pos.getY() + (1.00015 * self.velocity.getY())), vel, i)
 
-    def addLeftVirtualNeighbor(self, neighbor):
-        self.virtual_neighbors_left = np.concatenate((self.virtual_neighbors_left, neighbor))
+    def addLeftVirtualNeighbor(self, neighbor: Ray):
+        self.setVirtualLeft(np.concatenate((self.getVirtualLeft(), neighbor)))
 
-    def addRightVirtualNeighbor(self, neighbor):
-        self.virtual_neighbors_right = np.concatenate((self.virtual_neighbors_right, neighbor))
+    def addRightVirtualNeighbor(self, neighbor: Ray):
+        self.setVirtualRight(np.concatenate((self.getVirtualRight(), neighbor)))
 
-# deleteLeftVirtualNeighbor
+    def deleteLeftVirtualNeighbor(self, ray: Ray):
+        self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == ray)))
+
+    def deleteRightVirtualNeighbor(self, ray: Ray):
+        self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
+
+    def isOutside(self, ray: Ray):
+        return ray.getPos().getX() > self.X or ray.getPos().getX() < 0 or ray.getPos().getY() > self.Y or ray.getPos().getY() < 0
