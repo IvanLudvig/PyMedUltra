@@ -74,7 +74,8 @@ class Solver:
             i = 0
             while self.finishTime > 0:
                 self.step()
-                print('iter', i)
+                if i % 500 == 0:
+                    print('iter', i)
                 i += 1
             self.currentSensor += 1
 
@@ -271,4 +272,4 @@ class Solver:
 
     def writeToCSV(self):
         for sensor in self.sensors:
-            sensor.writeToCSV(self.currentSensor)
+            sensor.recordToCSV(self.currentSensor)

@@ -50,8 +50,8 @@ class Sensor:
             if (r.getTime() > 0):
                 signal += r.getBrightness() * self.signal(r.getTime(), r.getFrequencyCorrection())
             r.setTime(r.getTime() + self.DT_DIGITIZATION)
-        with open(self.WRITE_TO_CSV.format(number, number), "w") as file:
-            file.write(round(signal, 2) + " ")
+        with open(self.WRITE_TO_CSV.format(number, number), "a") as file:
+            file.write(str(round(signal, 2)) + " ")
         nulls_exist = True
         while (nulls_exist):
             nulls_exist = False
@@ -60,6 +60,3 @@ class Sensor:
                     self.record = np.delete(self.record, j)
                     nulls_exist = True
                     break
-
-        def addWriting(w: Record) -> None:
-            self.record = np.concatenate(self.record, w)
