@@ -171,7 +171,7 @@ class Solver:
 
         for sensor in self.sensors:
             if sensor.getPos().isPointInRect(rayPos, rightRayPos, rayNextPos, rightRayNextPos):
-                distance = distanceToSegment(ray.getPos(), ray.getRight().getPos(), dot.getPos())
+                distance = distanceToSegment(ray.getPos(), ray.getRight().getPos(), sensor.getPos())
                 time = ray.getTime(distance, self.obstacles[ray.getMaterial()].getRelativeSpeed())
                 if time < ray.getNextEncounter():
                     sensor.addRecord(Record(-time, ray.getIntensity(), 1.0 / ray.getVelocity().getY()))

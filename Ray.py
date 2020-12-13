@@ -108,7 +108,7 @@ class Ray:
         return Vector2(self.pos.getX() + self.velocity.getX() * step, self.pos.getY() + self.velocity.getY() * step)
 
     def getTime(self, dist, relativeSpeed) -> float:
-        if (self.material >= 0):
+        if self.material >= 0:
             return math.fabs(dist / relativeSpeed)
         else:
             return math.fabs(dist)
@@ -149,7 +149,6 @@ class Ray:
         # self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == ray)))
 
     def deleteRightVirtualNeighbor(self, ray: Ray) -> None:
-        # self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
         self.virtual_neighbors_right = np.where(self.virtual_neighbors_right == ray, self.virtual_neighbors_right, None)
         # self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
 
