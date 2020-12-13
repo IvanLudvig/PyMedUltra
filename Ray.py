@@ -129,6 +129,7 @@ class Ray:
         return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()),
                            self.pos.getY() - (1.00015 * self.velocity.getY())), vel, i)
 
+
     def getRefracted(self, obstacle: Obstacle) -> Ray:
         i = self.intensity
         vel = Vector2.getRefracted(self, A=obstacle.getPos(self.vertice_number),
