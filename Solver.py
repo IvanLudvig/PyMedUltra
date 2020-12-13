@@ -29,6 +29,7 @@ class Solver:
             self.DT_DIGITIZATION = configuration['Constants']['DT_DIGITIZATION']
             self.T_MULTIPLIER = configuration['Constants']['T_MULTIPLIER']
             self.DT_DETERIORATION = configuration['Constants']['DT_DETERIORATION']
+            self.WRITE_TO_CSV = configuration['ROOTS']['WRITE_TO_CSV']
 
             self.raysNum = 0
             self.deteriorationTime = 0
@@ -68,6 +69,8 @@ class Solver:
             self.sensors = np.append(self.sensors, sensor)
 
         for sensor in self.sensors:
+            with open(self.WRITE_TO_CSV.format(self.currentSensor, self.currentSensor), "w") as file:
+                file.write("")
             self.initExplosion(sensor.getPos())
             print('SENSOR', self.currentSensor)
             self.resetTime()
