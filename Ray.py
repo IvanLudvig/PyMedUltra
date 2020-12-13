@@ -14,6 +14,7 @@ class Ray:
 			self.SENSORS = configuration["Constants"]["SENSORS"]
 			self.X = configuration["Constants"]["X"]
 			self.Y = configuration["Constants"]["Y"]
+			self.MINLEN = configuration["Constants"]["MINLEN"]
 		self.pos = Vector2()
 		self.velocity = Vector2()
 		self.material = material
@@ -118,14 +119,14 @@ class Ray:
 
 	def getReflected(self, obstacle: Obstacle):
 		i = self.intensity
-		vel = Vector2.getReflected(self, A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
+		vel = Vector2().getReflected(A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
 		velocity = self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
 		return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()), 
 		self.pos.getY() - (1.00015 * self.velocity.getY())),vel,i)
 
 	def getRefracted(self, obstacle: Obstacle)->Ray:
 		i = self.intensity
-		vel = Vector2.getRefracted(self, A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
+		vel = Vector2().getRefracted(A = obstacle.getPos(self.vertice_number), B = obstacle.getPos(self.vertice_number + 1),
 		velocity = self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
 		return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()), 
 		self.pos.getY() + (1.00015 * self.velocity.getY())),vel,i)
@@ -145,7 +146,21 @@ class Ray:
 	def isOutside(self, Ray:Ray):
 		return Ray.getPos().getX() > self.X or Ray.getPos().getX() < 0 or Ray.getPos().getY() > self.Y or Ray.getPos().getY() < 0
 	
-	
+	def virtualHandler(self, ray:Ray, isRightNeighbor: bool):
+		if (ray.getMaterial() == self.getMaterial() and Vector2().scalar(ray.getVelocity(), self.getVelocity()) > 0 and Vector2().length(ray.getPos(), self.getPos()) < 5 * self.MINLEN):
+			if (self.getLeft() and isRightNeighbor):
+				ray.setRight(self)
+				self.setLeft(ray)
+			elif (not self.getRight() and not isRightNeighbor):
+				ray.setLeft(self)
+				self.setRight(ray)
+				self.setNextEncounter(math.inf)
+
+	def restoreWavefront():
+		pass
+		
+
+
 
 
 
