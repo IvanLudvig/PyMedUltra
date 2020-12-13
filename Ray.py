@@ -118,20 +118,23 @@ class Ray:
             self.pos.getX() + self.velocity.getX() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
         self.pos.setY(
             self.pos.getY() + self.velocity.getY() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
-        if ((self.nextEncounter < -0.5) or (self.nextEncounter == math.inf)):
+        if (self.nextEncounter < -0.5) or (self.nextEncounter == math.inf):
             return
         self.nextEncounter -= timeStep
-        return
 
     def getReflected(self, obstacle: Obstacle):
-        vel, intensity = Vector2().getReflected(A=obstacle.getPos(self.vertice_number), B=obstacle.getPos(self.vertice_number + 1),
-                                     velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(), intensity=self.intensity)
+        vel, intensity = Vector2().getReflected(A=obstacle.getPos(self.vertice_number),
+                                                B=obstacle.getPos(self.vertice_number + 1),
+                                                velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(),
+                                                intensity=self.intensity)
         return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()),
                            self.pos.getY() - (1.00015 * self.velocity.getY())), vel, intensity)
 
     def getRefracted(self, obstacle: Obstacle) -> Ray:
-        vel, intensity = Vector2().getRefracted(A=obstacle.getPos(self.vertice_number), B=obstacle.getPos(self.vertice_number + 1),
-                                     velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(), intensity=self.intensity)
+        vel, intensity = Vector2().getRefracted(A=obstacle.getPos(self.vertice_number),
+                                                B=obstacle.getPos(self.vertice_number + 1),
+                                                velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(),
+                                                intensity=self.intensity)
         return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()),
                            self.pos.getY() + (1.00015 * self.velocity.getY())), vel, intensity)
 
@@ -141,23 +144,26 @@ class Ray:
     def addRightVirtualNeighbor(self, neighbor: Ray) -> None:
         self.setVirtualRight(np.concatenate((self.getVirtualRight(), neighbor)))
 
-    def deleteLeftVirtualNeighbor(self, Ray: Ray) -> None:
-        self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == Ray)))
+    def deleteLeftVirtualNeighbor(self, ray: Ray) -> None:
+        self.virtual_neighbors_left = np.where(self.virtual_neighbors_left == ray, self.virtual_neighbors_left, None)
+        # self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == ray)))
 
-    def deleteRightVirtualNeighbor(self, Ray: Ray) -> None:
-        self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == Ray)))
+    def deleteRightVirtualNeighbor(self, ray: Ray) -> None:
+        # self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
+        self.virtual_neighbors_right = np.where(self.virtual_neighbors_right == ray, self.virtual_neighbors_right, None)
+        # self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
 
-    def isOutside(self, Ray: Ray) -> bool:
-        return Ray.getPos().getX() > self.X or Ray.getPos().getX() < 0 or Ray.getPos().getY() > self.Y or Ray.getPos().getY() < 0
+    def isOutside(self, ray: Ray) -> bool:
+        return ray.getPos().getX() > self.X or ray.getPos().getX() < 0 or ray.getPos().getY() > self.Y or ray.getPos().getY() < 0
 
     def virtualHandler(self, ray: Ray, isRightNeighbor: bool) -> None:
         if (ray.getMaterial() == self.getMaterial() and Vector2().scalar(ray.getVelocity(),
                                                                          self.getVelocity()) > 0 and Vector2().length(
-            ray.getPos(), self.getPos()) < 5 * self.MINLEN):
-            if (self.getLeft() and isRightNeighbor):
+                ray.getPos(), self.getPos()) < 5 * self.MINLEN):
+            if self.getLeft() and isRightNeighbor:
                 ray.setRight(self)
                 self.setLeft(ray)
-            elif (not self.getRight() and not isRightNeighbor):
+            elif not self.getRight() and not isRightNeighbor:
                 ray.setLeft(self)
                 self.setRight(ray)
                 self.setNextEncounter(math.inf)
@@ -182,28 +188,30 @@ class Ray:
         if ((self.intensity < self.VISIBILITY_THRESHOLD) or self.isOutside(self)
                 or (not self.left and not self.right and not (self.virtual_neighbors_left.shape[0]) and not (
                         self.virtual_neighbors_right.shape[0]))):
-            self.kill_marked = 1
-        if (self.kill_marked > 0):
-            if (self.left):
+            self.invalid = 1
+        if self.invalid > 0:
+            if self.left:
                 self.left.right = None
-            if (self.right):
+            if self.right:
                 self.right.left = None
+        self.killLeft()
+        self.killRight()
         self.virtual_neighbors_left.setVirtualLeft(np.array([]))
         self.virtual_neighbors_right.setVirtualRight(np.array([]))
 
     def clearNeighbours(self) -> None:
         nulls_exist = True
-        while (nulls_exist):
+        while nulls_exist:
             nulls_exist = False
         for i in range(self.virtual_neighbors_left.shape[0]):
-            if (not nulls_exist and not self.virtual_neighbors_left[i]):
+            if not nulls_exist and not self.virtual_neighbors_left[i]:
                 self.virtual_neighbors_left = np.delete(self.virtual_neighbors_left, i)
                 nulls_exist = True
         nulls_exist = True
-        while (nulls_exist):
+        while nulls_exist:
             nulls_exist = False
         for i in range(self.virtual_neighbors_right.shape[0]):
-            if (not nulls_exist and not self.virtual_neighbors_right[i]):
+            if not nulls_exist and not self.virtual_neighbors_right[i]:
                 self.virtual_neighbors_right = np.delete(self.virtual_neighbors_right, i)
                 nulls_exist = True
 

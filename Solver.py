@@ -69,10 +69,10 @@ class Solver:
             self.sensors = np.append(self.sensors, sensor)
 
         for sensor in self.sensors:
+            print('SENSOR', self.currentSensor)
             with open(self.WRITE_TO_CSV.format(self.currentSensor, self.currentSensor), "w") as file:
                 file.write("")
             self.initExplosion(sensor.getPos())
-            print('SENSOR', self.currentSensor)
             self.resetTime()
             i = 0
             while self.finishTime > 0:
@@ -89,6 +89,7 @@ class Solver:
             angle = 2 * math.pi * i / n
             velocity = Vector2(math.cos(angle), math.sin(angle))
             self.rays = np.append(self.rays, Ray(pos, velocity))
+            self.raysNum += 1
 
         for i in range(1, n - 1):
             self.rays[i].setLeft(self.rays[i - 1])
@@ -104,6 +105,7 @@ class Solver:
         self.finishTime = 2.0 * self.Y
 
     def step(self):
+        timeStep = self.DT_DIGITIZATION * self.T_MULTIPLIER
         for ray in self.rays:
             encounters = 0
             if ray.getNextEncounter() == math.inf:
@@ -112,10 +114,8 @@ class Solver:
                     encounters += self.checkDots(ray)
                 if encounters == 0:
                     ray.setNextEncounter(-1)
-
-        timeStep = self.DT_DIGITIZATION * self.T_MULTIPLIER
-        for ray in self.rays:
-            timeStep = min(timeStep, ray.getNextEncounter())
+            if ray.getNextEncounter() > self.ZERO:
+                timeStep = min(timeStep, ray.getNextEncounter())
 
         for ray in self.rays:
             ray.update(timeStep, self.obstacles[ray.getMaterial()].getRelativeSpeed())
@@ -182,6 +182,7 @@ class Solver:
         delta = float(0.5)
         for i in range(self.raysNum):
             if (self.rays[i].getNextEncounter() < self.ZERO) and (self.rays[i].getNextEncounter > -delta):
+                print('reflect')
                 if self.rays[i].getObstacleNumber() >= 0:
                     reflected = self.rays[i].getReflected(self.obstacles[self.rays[i].getObstacleNumber()])
                     refracted = self.rays[i].getRefracted(self.obstacles[self.rays[i].getObstacleNumber()])
@@ -276,3 +277,5 @@ class Solver:
     def writeToCSV(self):
         for sensor in self.sensors:
             sensor.recordToCSV(self.currentSensor)
+        with open(self.WRITE_TO_CSV.format(self.currentSensor, self.currentSensor), "a") as file:
+            file.write("\n")
