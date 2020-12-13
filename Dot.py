@@ -1,7 +1,7 @@
 from Vector2 import Vector2
 
 class Dot:
-    def __init__(self, pos, brightness=0):
+    def __init__(self, pos:Vector2=Vector2(), brightness=0):
         self.pos = pos
         self.brightness = brightness
     

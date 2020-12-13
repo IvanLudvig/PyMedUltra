@@ -15,6 +15,7 @@ class Ray:
 			self.X = configuration["Constants"]["X"]
 			self.Y = configuration["Constants"]["Y"]
 			self.MINLEN = configuration["Constants"]["MINLEN"]
+			self.DETERIORATION = configuration["Constants"]["DETERIORATION"]
 		self.pos = Vector2()
 		self.velocity = Vector2()
 		self.material = material
@@ -131,22 +132,22 @@ class Ray:
 		return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()), 
 		self.pos.getY() + (1.00015 * self.velocity.getY())),vel,i)
 
-	def addLeftVirtualNeighbor(self, neighbor:Ray):
+	def addLeftVirtualNeighbor(self, neighbor:Ray)->None:
 		self.setVirtualLeft(np.concatenate((self.getVirtualLeft(), neighbor)))
 
-	def addRightVirtualNeighbor(self, neighbor:Ray):
+	def addRightVirtualNeighbor(self, neighbor:Ray)->None:
 		self.setVirtualRight(np.concatenate((self.getVirtualRight(), neighbor)))
 	
-	def deleteLeftVirtualNeighbor(self, Ray:Ray):
+	def deleteLeftVirtualNeighbor(self, Ray:Ray)->None:
 		self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == Ray)))
 
-	def deleteRightVirtualNeighbor(self, Ray:Ray):
+	def deleteRightVirtualNeighbor(self, Ray:Ray)->None:
 		self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == Ray)))
 
-	def isOutside(self, Ray:Ray):
+	def isOutside(self, Ray:Ray)->bool:
 		return Ray.getPos().getX() > self.X or Ray.getPos().getX() < 0 or Ray.getPos().getY() > self.Y or Ray.getPos().getY() < 0
 	
-	def virtualHandler(self, ray:Ray, isRightNeighbor: bool):
+	def virtualHandler(self, ray:Ray, isRightNeighbor: bool)->None:
 		if (ray.getMaterial() == self.getMaterial() and Vector2().scalar(ray.getVelocity(), self.getVelocity()) > 0 and Vector2().length(ray.getPos(), self.getPos()) < 5 * self.MINLEN):
 			if (self.getLeft() and isRightNeighbor):
 				ray.setRight(self)
@@ -156,8 +157,73 @@ class Ray:
 				self.setRight(ray)
 				self.setNextEncounter(math.inf)
 
-	def restoreWavefront():
-		pass
+	def restoreWavefront(self,reflected:Ray, refracted: Ray)->None:
+		for i in range(self.virtual_neighbors_left.shape[0]):
+			self.virtual_neighbors_left[i].virtualHandler(reflected, False)
+			self.virtual_neighbors_left[i].virtualHandler(refracted, False)
+		for i in range(self.virtual_neighbors_right.shape[0]):
+			self.virtual_neighbors_right[i].virtualHandler(reflected, True)
+			self.virtual_neighbors_right[i].virtualHandler(refracted, True)
+	
+	def killLeft(self)->None:
+		for i in range(self.virtual_neighbors_left.shape[0]):
+			self.virtual_neighbors_left[i].deleteLeftVirtualNeighbor(self)
+
+	def killRight(self)->None:
+		for i in range(self.virtual_neighbors_right.shape[0]):
+			self.virtual_neighbors_right[i].deleteRightVirtualNeighbor(self)
+
+	def checkInvalid(self)->None:
+		if ((self.intensity < self.VISIBILITY_THRESHOLD) or self.isOutside(self)
+		or (not self.left and not self.right and not (self.virtual_neighbors_left.shape[0]) and not(self.virtual_neighbors_right.shape[0]))):
+			self.kill_marked = 1
+		if (self.kill_marked > 0):
+			if (self.left):
+				self.left.right = None
+			if (self.right):
+				self.right.left = None
+		self.virtual_neighbors_left.setVirtualLeft(np.array([]))
+		self.virtual_neighbors_right.setVirtualRight(np.array([]))
+
+	def clearNeighbours(self)->None:
+		nulls_exist = True
+		while(nulls_exist):
+			nulls_exist = False
+		for i in range(self.virtual_neighbors_left.shape[0]):
+			if (not nulls_exist and not self.virtual_neighbors_left[i]):
+				self.virtual_neighbors_left = np.delete(self.virtual_neighbors_left, i)
+				nulls_exist = True
+		nulls_exist = True
+		while(nulls_exist):
+			nulls_exist = False
+		for i in range(self.virtual_neighbors_right.shape[0]):
+			if (not nulls_exist and not self.virtual_neighbors_right[i]):
+				self.virtual_neighbors_right= np.delete(self.virtual_neighbors_right, i)
+				nulls_exist = True
+		
+	def deteriorate(self):
+		self.intensity *= self.DETERIORATION
+
+	# Тут еще другой конструктор def __init__(self, dot:Dot, alpha: float) :
+									#pass
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+	
+
+		
+
+
 		
 
 
