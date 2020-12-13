@@ -19,8 +19,8 @@ class Ray:
             self.Y = configuration["Constants"]["Y"]
             self.MINLEN = configuration["Constants"]["MINLEN"]
             self.DETERIORATION = configuration["Constants"]["DETERIORATION"]
-        self.pos = Vector2()
-        self.velocity = Vector2()
+        self.pos = pos
+        self.velocity = velocity
         self.material = material
         self.intensity = intensity
         self.nextEncounter = nextEncounter
