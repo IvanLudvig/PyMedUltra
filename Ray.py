@@ -12,6 +12,8 @@ class Ray:
 			configuration = json.load(jf)
 			self.VISIBILITY_THRESHOLD = configuration["Constants"]["VISIBILITY_THRESHOLD"]
 			self.SENSORS = configuration["Constants"]["SENSORS"]
+			self.X = configuration["Constants"]["X"]
+			self.Y = configuration["Constants"]["Y"]
 		self.pos = Vector2()
 		self.velocity = Vector2()
 		self.material = material
@@ -129,12 +131,29 @@ class Ray:
 		self.pos.getY() + (1.00015 * self.velocity.getY())),vel,i)
 
 	def addLeftVirtualNeighbor(self, neighbor:Ray):
-		self.virtual_neighbors_left = np.concatenate((self.virtual_neighbors_left, neighbor))
+		self.setVirtualLeft(np.concatenate((self.getVirtualLeft(), neighbor)))
 
 	def addRightVirtualNeighbor(self, neighbor:Ray):
-		self.virtual_neighbors_right = np.concatenate((self.virtual_neighbors_right, neighbor))
+		self.setVirtualRight(np.concatenate((self.getVirtualRight(), neighbor)))
 	
-	#deleteLeftVirtualNeighbor
+	def deleteLeftVirtualNeighbor(self, Ray:Ray):
+		self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == Ray)))
+
+	def deleteRightVirtualNeighbor(self, Ray:Ray):
+		self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == Ray)))
+
+	def isOutside(self, Ray:Ray):
+		return Ray.getPos().getX() > self.X or Ray.getPos().getX() < 0 or Ray.getPos().getY() > self.Y or Ray.getPos().getY() < 0
+	
+	
+
+
+
+	
+	
+
+
+
 
 
 
