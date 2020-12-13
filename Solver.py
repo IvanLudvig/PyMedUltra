@@ -181,7 +181,7 @@ class Solver:
     def handleReflection(self):
         delta = float(0.5)
         for i in range(self.raysNum):
-            if (self.rays[i].getNextEncounter() < self.ZERO) and (self.rays[i].getNextEncounter > -delta):
+            if (self.rays[i].getNextEncounter() < self.ZERO) and (self.rays[i].getNextEncounter() > -delta):
                 print('reflect')
                 if self.rays[i].getObstacleNumber() >= 0:
                     reflected = self.rays[i].getReflected(self.obstacles[self.rays[i].getObstacleNumber()])
