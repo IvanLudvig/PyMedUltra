@@ -23,6 +23,7 @@ class Solver:
             self.X = configuration['CONSTANTS']['X']
             self.Y = configuration['CONSTANTS']['Y']
             self.DX_SENSORS = configuration['CONSTANTS']['DX_SENSORS']
+            self.ZERO = configuration['Constants']['ZERO']
 
             self.nodesNum = 0
             self.obstacles = np.array([])
@@ -99,3 +100,65 @@ class Solver:
 
     def checkDots(self, ray):
         encounters = 0
+
+    def handleReflection(self):
+        delta = float(0.5)
+        for i in range(self.nodesNum):
+            if (self.rays[i].getNextEncounter() < self.ZERO) and (self.rays[i].getNextEncounter > -delta):
+                if self.rays[i].getObstacleNumber() >= 0:
+                    reflected = Ray(self.rays[i].getReflected(self.obstacles[self.rays[i].getObstacleNumber()]))
+                    refracted = Ray(self.rays[i].getRefracted(self.obstacles[self.rays[i].getObstacleNumber()]))
+                    if reflected.getIntensity() == -1:
+                        self.rays[i].setInvalid(1)
+                    else:
+                        # real neighbors always turn to ghost ones -
+                        # reflected go to the other direction, refracted are in another material
+
+                        if self.rays[i].getLeft():
+                            left = Ray(self.rays[i].getLeft())
+                            reflected.addLeftVirtualNeighbor(left)
+                            refracted.addLeftVirtualNeighbor(left)
+                            left.addRightVirtualNeighbor(reflected)
+                            left.addLeftVirtualNeighbor(refracted)
+                            self.rays[i].setLeft(left)
+
+                        if self.rays[i].getRight():
+                            right = Ray(self.rays[i].getRight())
+                            reflected.addRightVirtualNeighbor(right)
+                            refracted.addRightVirtualNeighbor(right)
+                            right.addRightVirtualNeighbor(reflected)
+                            right.addLeftVirtualNeighbor(refracted)
+                            self.rays[i].setRight(right)
+
+                    self.rays[i].restoreWavefront(reflected, refracted)
+
+                elif self.rays[i].getObstacleNumber() == -1:  # encountering a dot obstacle
+                    sina = float(-self.rays[i].getVelocity().getY())
+                    cosa = float(-self.rays[i].getVelocity().getX())
+                    if cosa > 0:
+                        alpha = float(np.arcsin(sina))
+                    else:
+                        alpha = float(math.pi - float(np.arcsin(sina)))
+
+                    dalpha = float(math.pi / (self.POINTS_IN_DOT_WAVEFRONT - 1))
+                    alpha += math.pi / 2
+                    oldNodesNum = self.nodesNum
+                    for j in range(self.POINTS_IN_DOT_WAVEFRONT):
+                        n = Ray(Vector2(self.dots[self.rays[i].getVerticeNumber()].getPos().getX()+np.cos(alpha)*0.01,
+                                        self.dots[self.rays[i].getVerticeNumber()].getPos().getY()+np.sin(alpha)*0.01),
+                                Vector2(np.cos(alpha), np.sin(alpha)),
+                                1.0*self.dots[self.rays[i].getVerticeNumber()].getBrightness())
+                        self.rays[self.nodesNum] = n
+                        self.nodesNum += 1
+                        alpha -= dalpha
+
+                    for j in range(1, self.POINTS_IN_DOT_WAVEFRONT - 1):
+                        self.rays[oldNodesNum + j].setLeft(self.rays[oldNodesNum + j - 1])
+                        self.rays[oldNodesNum + j].setRight(self.rays[oldNodesNum + j + 1])
+
+                    self.rays[oldNodesNum].setRight(self.rays[oldNodesNum + 1])
+                    self.rays[self.nodesNum - 1].setLeft(self.rays[self.nodesNum - 2])
+                    self.rays[i].setNextEncounter(math.inf)
+
+
+
