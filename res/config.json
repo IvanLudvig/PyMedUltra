@@ -50,7 +50,8 @@
       "PREHILB":"/prehilb.png",
       "SECOND_HILB":"/2hilb.png",
       "INPUT":"data/final_raw_data.csv",
-      "OUTPUT":"data/result.png"
+      "OUTPUT":"data/result.png",
+      "WRITE_TO_CSV":"data/baseline/Sensor{}/raw{}.csv"
    }
  }
 

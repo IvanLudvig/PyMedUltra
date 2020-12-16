@@ -17,8 +17,10 @@ class Ray:
             self.SENSORS = configuration["Constants"]["SENSORS"]
             self.X = configuration["Constants"]["X"]
             self.Y = configuration["Constants"]["Y"]
-        self.pos = Vector2()
-        self.velocity = Vector2()
+            self.MINLEN = configuration["Constants"]["MINLEN"]
+            self.DETERIORATION = configuration["Constants"]["DETERIORATION"]
+        self.pos = pos
+        self.velocity = velocity
         self.material = material
         self.intensity = intensity
         self.nextEncounter = nextEncounter
@@ -106,7 +108,7 @@ class Ray:
         return Vector2(self.pos.getX() + self.velocity.getX() * step, self.pos.getY() + self.velocity.getY() * step)
 
     def getTime(self, dist, relativeSpeed) -> float:
-        if (self.material >= 0):
+        if self.material >= 0:
             return math.fabs(dist / relativeSpeed)
         else:
             return math.fabs(dist)
@@ -116,39 +118,101 @@ class Ray:
             self.pos.getX() + self.velocity.getX() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
         self.pos.setY(
             self.pos.getY() + self.velocity.getY() * timeStep * (relativeSpeed if self.material >= 0 else 1.0))
-        if ((self.nextEncounter < -0.5) or (self.nextEncounter == math.inf)):
+        if (self.nextEncounter < -0.5) or (self.nextEncounter == math.inf):
             return
         self.nextEncounter -= timeStep
-        return
 
     def getReflected(self, obstacle: Obstacle):
-        i = self.intensity
-        vel = Vector2.getReflected(self, A=obstacle.getPos(self.vertice_number),
-                                   B=obstacle.getPos(self.vertice_number + 1),
-                                   velocity=self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
+        vel, intensity = Vector2().getReflected(A=obstacle.getPos(self.vertice_number),
+                                                B=obstacle.getPos(self.vertice_number + 1),
+                                                velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(),
+                                                intensity=self.intensity)
         return Ray(Vector2(self.pos.getX() - (1.00015 * self.velocity.getX()),
-                           self.pos.getY() - (1.00015 * self.velocity.getY())), vel, i)
-
+                           self.pos.getY() - (1.00015 * self.velocity.getY())), vel, intensity)
 
     def getRefracted(self, obstacle: Obstacle) -> Ray:
-        i = self.intensity
-        vel = Vector2.getRefracted(self, A=obstacle.getPos(self.vertice_number),
-                                   B=obstacle.getPos(self.vertice_number + 1),
-                                   velocity=self.velocity, relativeSpeed=obstacle.getCRel(), intensity=i)
+        vel, intensity = Vector2().getRefracted(A=obstacle.getPos(self.vertice_number),
+                                                B=obstacle.getPos(self.vertice_number + 1),
+                                                velocity=self.velocity, relativeSpeed=obstacle.getRelativeSpeed(),
+                                                intensity=self.intensity)
         return Ray(Vector2(self.pos.getX() + (1.00015 * self.velocity.getX()),
-                           self.pos.getY() + (1.00015 * self.velocity.getY())), vel, i)
+                           self.pos.getY() + (1.00015 * self.velocity.getY())), vel, intensity)
 
-    def addLeftVirtualNeighbor(self, neighbor: Ray):
+    def addLeftVirtualNeighbor(self, neighbor: Ray) -> None:
         self.setVirtualLeft(np.concatenate((self.getVirtualLeft(), neighbor)))
 
-    def addRightVirtualNeighbor(self, neighbor: Ray):
+    def addRightVirtualNeighbor(self, neighbor: Ray) -> None:
         self.setVirtualRight(np.concatenate((self.getVirtualRight(), neighbor)))
 
-    def deleteLeftVirtualNeighbor(self, ray: Ray):
-        self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == ray)))
+    def deleteLeftVirtualNeighbor(self, ray: Ray) -> None:
+        self.virtual_neighbors_left = np.where(self.virtual_neighbors_left == ray, self.virtual_neighbors_left, None)
+        # self.setVirtualLeft(np.delete(self.getVirtualLeft(), np.where(self.getVirtualLeft() == ray)))
 
-    def deleteRightVirtualNeighbor(self, ray: Ray):
-        self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
+    def deleteRightVirtualNeighbor(self, ray: Ray) -> None:
+        self.virtual_neighbors_right = np.where(self.virtual_neighbors_right == ray, self.virtual_neighbors_right, None)
+        # self.setVirtualRight(np.delete(self.getVirtualRight(), np.where(self.getVirtualLeft() == ray)))
 
-    def isOutside(self, ray: Ray):
+    def isOutside(self, ray: Ray) -> bool:
         return ray.getPos().getX() > self.X or ray.getPos().getX() < 0 or ray.getPos().getY() > self.Y or ray.getPos().getY() < 0
+
+    def virtualHandler(self, ray: Ray, isRightNeighbor: bool) -> None:
+        if (ray.getMaterial() == self.getMaterial() and Vector2().scalar(ray.getVelocity(),
+                                                                         self.getVelocity()) > 0 and Vector2().length(
+            ray.getPos(), self.getPos()) < 5 * self.MINLEN):
+            if self.getLeft() and isRightNeighbor:
+                ray.setRight(self)
+                self.setLeft(ray)
+            elif not self.getRight() and not isRightNeighbor:
+                ray.setLeft(self)
+                self.setRight(ray)
+                self.setNextEncounter(math.inf)
+
+    def restoreWavefront(self, reflected: Ray, refracted: Ray) -> None:
+        for i in range(self.virtual_neighbors_left.shape[0]):
+            self.virtual_neighbors_left[i].virtualHandler(reflected, False)
+            self.virtual_neighbors_left[i].virtualHandler(refracted, False)
+        for i in range(self.virtual_neighbors_right.shape[0]):
+            self.virtual_neighbors_right[i].virtualHandler(reflected, True)
+            self.virtual_neighbors_right[i].virtualHandler(refracted, True)
+
+    def killLeft(self) -> None:
+        for i in range(self.virtual_neighbors_left.shape[0]):
+            self.virtual_neighbors_left[i].deleteLeftVirtualNeighbor(self)
+
+    def killRight(self) -> None:
+        for i in range(self.virtual_neighbors_right.shape[0]):
+            self.virtual_neighbors_right[i].deleteRightVirtualNeighbor(self)
+
+    def checkInvalid(self) -> None:
+        if ((self.intensity < self.VISIBILITY_THRESHOLD) or self.isOutside(self)
+                or (not self.left and not self.right and not (self.virtual_neighbors_left.shape[0]) and not (
+                        self.virtual_neighbors_right.shape[0]))):
+            self.invalid = 1
+        if self.invalid > 0:
+            if self.left:
+                self.left.right = None
+            if self.right:
+                self.right.left = None
+        self.killLeft()
+        self.killRight()
+        self.virtual_neighbors_left = np.array([])
+        self.virtual_neighbors_right = np.array([])
+
+    def clearNeighbours(self) -> None:
+        nulls_exist = True
+        while nulls_exist:
+            nulls_exist = False
+        for i in range(self.virtual_neighbors_left.shape[0]):
+            if not nulls_exist and not self.virtual_neighbors_left[i]:
+                self.virtual_neighbors_left = np.delete(self.virtual_neighbors_left, i)
+                nulls_exist = True
+        nulls_exist = True
+        while nulls_exist:
+            nulls_exist = False
+        for i in range(self.virtual_neighbors_right.shape[0]):
+            if not nulls_exist and not self.virtual_neighbors_right[i]:
+                self.virtual_neighbors_right = np.delete(self.virtual_neighbors_right, i)
+                nulls_exist = True
+
+    def deteriorate(self):
+        self.intensity *= self.DETERIORATION

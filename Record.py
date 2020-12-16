@@ -22,8 +22,8 @@ class Record:
     def getFrequencyCorrection(self) -> float:
         return self.frequency_correction
 
-    def getNode(self) -> Ray:
-        return Ray
+    def getRay(self) -> Ray:
+        return self.ray
 
     def setTime(self, time: float) -> None:
         self.time = time
